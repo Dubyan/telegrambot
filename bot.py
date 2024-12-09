@@ -30,7 +30,7 @@ NUM_WINNERS = 30  # Количество победителей
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "Привет! Отправьте свою почту и фото, чтобы участвовать. Пример: email@example.com.  Вы можете увидеть количество одобренных заявок по команде /mytickets")
+    bot.reply_to(message, "Привет! Отправьте свою почту, а затем, следующим сообщением, скриншот депозита, чтобы участвовать. Каждый депозит - одна заявка. Каждая заявка может занять одно призовое место. Вы можете увидеть количество одобренных заявок по команде /mytickets")
 
 
 @bot.message_handler(commands=['mytickets'])
@@ -46,7 +46,7 @@ def handle_user_message(message):
         email = message.text
         if re.match(email_regex, email):
             user_data[message.from_user.id] = {'email': email, 'username': message.from_user.username}
-            bot.reply_to(message, "Почта получена. Теперь отправьте фото.")
+            bot.reply_to(message, "Почта получена. Теперь отправьте скриншот депозита.")
         else:
             bot.reply_to(message, "Неверный формат почты. Попробуйте ещё раз.")
     elif message.content_type == 'photo' and message.from_user.id in user_data:

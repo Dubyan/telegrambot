@@ -91,69 +91,43 @@ def admin_new_application(ticket_id, user_id, username, email, photo, approved_c
 
 @bot.message_handler(func=lambda message: message.from_user.id == ADMIN_ID)
 def handle_admin_message(message):
-    if message.text.startswith('/approve'):
+        elif message.text.startswith('/message'):
         try:
-            command, ticket_id_str = message.text.split()
-            ticket_id = int(ticket_id_str)
-            process_admin_command(command, ticket_id, message)
-        except (ValueError, IndexError):
-            bot.reply_to(message, "Неверный формат команды. Используйте /approve [TicketId]")
-        except Exception as e:
-            logging.exception(f"Ошибка при обработке команды администратора: {e}")
-            bot.reply_to(message, f"Произошла ошибка при обработке команды: {e}")
-    elif message.text.startswith('/reject'):
-        try:
-            command, ticket_id_str, *comment = message.text.split(maxsplit=2)
-            ticket_id = int(ticket_id_str)
-            comment = " ".join(comment)
-            process_admin_command(command, ticket_id, message, comment)
-        except (ValueError, IndexError):
-            bot.reply_to(message, "Неверный формат команды. Используйте /reject [TicketId] [комментарий]")
-        except Exception as e:
-            logging.exception(f"Ошибка при обработке команды администратора: {e}")
-            bot.reply_to(message, f"Произошла ошибка при обработке команды: {e}")
-    elif message.text.startswith('/winner'):
-        try:
-            command, place_str, email = message.text.split(maxsplit=2)
-            place = int(place_str)
-            if 1 <= place <= NUM_WINNERS: # Проверка места в пределах количества победителей
-                preselected_winners[place] = email
-                bot.reply_to(message, f"Победитель на {place} место назначен: {email}")
-            else:
-                bot.reply_to(message, f"Некорректный номер места. Номер места должен быть от 1 до {NUM_WINNERS}.")
-        except (ValueError, IndexError):
-            bot.reply_to(message, f"Неверный формат команды. Используйте /winner [место] [email] (место от 1 до {NUM_WINNERS})")
-        except Exception as e:
-            logging.exception(f"Ошибка при назначении победителя: {e}")
-            bot.reply_to(message, f"Произошла ошибка при назначении победителя: {e}")
-    elif message.text == '/finish':
-        try:
-            global winners_announced
-            winners = choose_winners()
-            winners_announced = True
-            admin_message = create_winners_message(winners, True)  # Имена пользователей для администратора
-            user_message = create_winners_message(winners, False)  # Email для пользователей
-            bot.reply_to(message, "Результаты розыгрыша готовы. Используйте /sendall для отправки.")
-            bot.send_message(ADMIN_ID, admin_message)
-            bot.send_message(ADMIN_ID, user_message)
+            command, *text_parts = message.text.split(maxsplit=1)  # Разбиваем команду и текст
+            text = " ".join(text_parts) # Собираем текст сообщения
+            if not text:
+                raise ValueError("Текст сообщения не может быть пустым.")
+            send_message_to_approved(text)
+            bot.reply_to(message, "Сообщение отправлено всем одобренным участникам.")
 
+        except ValueError as e:
+            bot.reply_to(message, str(e)) # Отправляем ошибку если текст пустой
         except Exception as e:
-            logging.exception(f"Ошибка при объявлении победителей: {e}")
-            bot.reply_to(message, f"Произошла ошибка при объявлении победителей: {e}")
-    elif message.text == '/sendall' and winners_announced:
-        try:
-            winners = choose_winners()
-            user_message = create_winners_message(winners, False)
-            send_winners_message(user_message)
-            bot.reply_to(message, "Результаты розыгрыша отправлены!")
-            winners_announced = False
-        except Exception as e:
-            logging.exception(f"Ошибка при отправке сообщений пользователям: {e}")
-            bot.reply_to(message, f"Произошла ошибка при отправке сообщений пользователям: {e}")
+            logging.exception(f"Ошибка при отправке сообщения: {e}")
+            bot.reply_to(message, f"Произошла ошибка при отправке сообщения: {e}")
+
+
     else:
-        bot.reply_to(message, "Неизвестная команда. Используйте /approve [TicketId] или /reject [TicketId] [комментарий] или /winner [место] [email]")
+        bot.reply_to(message, "Неизвестная команда. ... /message [текст]")
+        
+def send_message_to_approved(text):
+    """Отправляет сообщение всем одобренным пользователям."""
+    approved_users = []
+    try:
+        with open(APPROVED_FILENAME, 'r', encoding='utf-8') as f:
+            for line in f:
+                parts = line.strip().split(':')
+                if len(parts) >= 2:  # Проверка на корректность строки
+                    approved_users.append(int(parts[1])) # Добавляем user_id в список
+    except FileNotFoundError:
+        logging.error(f"Файл {APPROVED_FILENAME} не найден.")
+        return
 
-
+    for user_id in set(approved_users):  # Отправляем только уникальным пользователям
+        try:
+            bot.send_message(user_id, text)
+        except Exception as e:
+            logging.error(f"Ошибка отправки сообщения пользователю {user_id}: {e}")        
 
 def process_admin_command(command, ticket_id, message, comment=""):
     try:

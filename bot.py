@@ -2,9 +2,9 @@ import telebot
 import logging
 import os
 
-BOT_TOKEN = "YOUR_BOT_TOKEN"  # Замени на свой токен
+BOT_TOKEN = "8022896078:AAHwt6EuF8zxFlxjDtJ4X7-ocqwFGyc6NOg"  # Замени на свой токен
 ALL_TICKETS_FILENAME = "AllTickets.txt"
-ADMIN_ID = YOUR_ADMIN_ID # ID администратора
+ADMIN_ID = 1764250421 # ID администратора
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
